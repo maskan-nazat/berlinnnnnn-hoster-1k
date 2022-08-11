@@ -170,13 +170,18 @@ func SolveHcaptcha(Proxy string) (string, error) {
 		return captcha.GeneratedPassUUID, nil
 	}
 
+	if utils.Params.Advanced.OneClick {
+		utils.FailedSubmit++
+		return "", errors.New("oneclick activated, and captcha not passed")
+	}
+
 	key, err := session.CheckCaptcha(captcha, config)
 
 	if err != nil {
 		return "", errors.New("response rejected")
 	}
 
-	utils.Log(fmt.Sprintf("[Hcaptcha] (%s) Took %vs", key[:20], time.Since(start)) ,3)
+	utils.Log(fmt.Sprintf("[Hcaptcha] (%s) Took %vs", key[:20], time.Since(start)), 3)
 
 	return key, nil
 }

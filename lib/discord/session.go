@@ -20,7 +20,6 @@ func NewDiscordSession(Proxy string) *DiscordSession {
 
 	return session
 }
-
 func (d *DiscordSession) Register(CaptchaKey string) string {
 	payload, _ := json.Marshal(PayloadRegister{
 		Consent:     true,
@@ -30,7 +29,7 @@ func (d *DiscordSession) Register(CaptchaKey string) string {
 		Invite:      "book-club",
 	})
 
-	response, err := d.Client.Do("https://discord.com/api/v9/auth/register", d.CycleOptions(string(payload)), "POST")
+	response, err := d.Client.Do("https://canary.discord.com/api/v9/auth/register", d.CycleOptions(string(payload)), "POST")
 	utils.HandleError(err)
 
 	var data ResponseRegister
@@ -39,14 +38,14 @@ func (d *DiscordSession) Register(CaptchaKey string) string {
 	if data.Token != "" {
 		//fmt.Println(data.Token)
 		utils.AppendLine("./data/output/generated.txt", data.Token)
-		go d.CheckAccount(data.Token)
+		go d.CheckAccount(data.Token, CaptchaKey[:2])
 	}
 
 	go utils.ProxyList.LockByTimeout(d.Proxy, 125)
 	return data.Token
 }
 
-func (d *DiscordSession) CheckAccount(Token string) bool {
+func (d *DiscordSession) CheckAccount(Token string, x string) bool {
 	utils.Generated++
 
 	delete(d.Headers, "x-super-properties")
@@ -57,12 +56,12 @@ func (d *DiscordSession) CheckAccount(Token string) bool {
 	utils.HandleError(err)
 
 	if response.Status == 200 {
-		utils.Log(fmt.Sprintf("UNLOCKED: %s", Token), 1)
-		utils.AppendLine("./data/ouput/unlocked.txt", Token)
+		utils.Log(fmt.Sprintf("UNLOCKED (%s): %s", x, Token), 1)
+		utils.AppendLine("./data/output/unlocked.txt", Token)
 		utils.Unlocked++
 		return true
 	} else {
-		utils.Log(fmt.Sprintf("LOCKED: %s", Token), 2)
+		utils.Log(fmt.Sprintf("LOCKED (%s): %s", x, Token), 2)
 		utils.AppendLine("./data/output/locked.txt", Token)
 		utils.Locked++
 		return false

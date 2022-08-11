@@ -38,7 +38,7 @@ func main() {
 
 	fmt.Println(utils.Params)
 	
-	c := goccm.New(150)
+	c := goccm.New(utils.Params.Advanced.Threads)
 
 	for {
 		c.Wait()
