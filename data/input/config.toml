@@ -1,0 +1,7 @@
+[solver]
+hcaptchaEndpoint = "DomainByppass"
+hcaptchaVersion  = "6571b71"
+hcaptchaType     = "hsw"
+
+[advanced]
+debug = true
