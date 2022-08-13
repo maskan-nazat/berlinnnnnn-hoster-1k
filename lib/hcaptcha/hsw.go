@@ -1,3 +1,5 @@
+// credit: my friend dropout, btw full lock so use undetected-browser
+
 package hcaptcha
 
 import (
