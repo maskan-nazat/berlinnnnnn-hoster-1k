@@ -1,7 +1,12 @@
 [solver]
-hcaptchaEndpoint = "DomainByppass"
-hcaptchaVersion  = "6571b71"
-hcaptchaType     = "hsw"
+hcaptchaEndpoint = "DomainOfficial"
+hcaptchaVersion  = "1f7dc62"
+hcaptchaType     = "hsw" # hsw; hsl; hsj
+
+[discord]
+inviteCode = "book-club"
 
 [advanced]
-debug = true
+debug = false
+threads = 50
+oneClick = false
