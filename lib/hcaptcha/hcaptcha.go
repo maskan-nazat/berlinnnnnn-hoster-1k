@@ -1,10 +1,12 @@
 package hcaptcha
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-
+	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
@@ -60,8 +62,38 @@ func (h *HcaptchaSession) GetProof(Config SiteConfig) string {
 		return strings.Join([]string{"1", fmt.Sprint(int(claims["s"].(float64))), now, claims["d"].(string), "", "1"}, ":")
 	}
 
-	p, _ := HSWHashProof(Config.C.Req)
-	return p
+	fast := false
+
+	if fast {
+		p, err := HSWHashProof(Config.C.Req)
+
+		if err != nil {
+			fmt.Println(err)
+			return ""
+		}
+
+		return p
+	} else {
+		client := http.Client{
+			Timeout: 5 * time.Second,
+		}
+
+		for {
+			resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:3030/n?req=%s", Config.C.Req))
+
+			if err != nil {
+				continue
+			}
+			defer resp.Body.Close()
+
+			bodyBytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				continue
+			}
+
+			return string(bodyBytes)
+		}
+	}
 }
 
 func (h *HcaptchaSession) GetCaptcha(Config SiteConfig) (Captcha, error) {
@@ -80,13 +112,12 @@ func (h *HcaptchaSession) GetCaptcha(Config SiteConfig) (Captcha, error) {
 		payload.Set(name, value)
 	}
 
-	//h.Headers["content-length"] = strconv.Itoa(len(payload.Encode())) //-> fail
-
-	response, err := h.Client.Do(fmt.Sprintf("https://%s/getcaptcha/%s", h.Domain, utils.URLEncode(h.SiteKey)), h.CycleOptions(payload.Encode()), "POST")
+	// utils.URLEncode(h.SiteKey)
+	response, err := h.Client.Do(fmt.Sprintf("https://%s/getcaptcha/%s", h.Domain, h.SiteKey), h.CycleOptions(payload.Encode()), "POST")
 	utils.HandleError(err)
 
 	if response.Status != 200 {
-		return Captcha{}, errors.New(fmt.Sprintf("failed to get captcha with status: %d", response.Status))
+		return Captcha{}, errors.New(fmt.Sprintf("(GetCaptcha.1) failed to get captcha with status: %d", response.Status))
 	}
 
 	var captcha Captcha
@@ -99,19 +130,39 @@ func (h *HcaptchaSession) GetCaptcha(Config SiteConfig) (Captcha, error) {
 
 	if _, ok := response.JSONBody()["success"]; ok {
 		if !captcha.Success {
-			return captcha, errors.New(fmt.Sprintf("failed to get captcha with status: %d, error-code: %v", response.Status, captcha.ErrorCode))
+			//fmt.Println(response.JSONBody())
+			return captcha, errors.New(fmt.Sprintf("(GetCaptcha.2) failed to get captcha with status: %d, error-code: %v", response.Status, captcha.ErrorCode))
 		}
 	}
 
 	return captcha, nil
 }
 
-func (c *Captcha) GetAnwser() map[string]string {
-	item := strings.ReplaceAll(strings.Split(strings.ReplaceAll(c.RequesterQuestion.En, "an", "a"), "Please click each image containing a ")[1], ".", "")
+func (c *Captcha) GetAnswer() map[string]string {
+	item := strings.ReplaceAll(strings.Split(strings.ReplaceAll(c.RequesterQuestion.En, "an ", "a "), "Please click each image containing a ")[1], ".", "")
 	response := map[string]string{}
 
+	client := http.Client{
+		Timeout: 500 * time.Second,
+	}
+
 	for _, task := range c.Tasklist {
-		response[task.TaskKey] = strconv.FormatBool(strings.Contains(task.DatapointURI, item))
+		resp, err := client.Get(fmt.Sprintf("http://127.0.0.1:1337/check/%s/%s", base64.StdEncoding.EncodeToString([]byte(item)), base64.StdEncoding.EncodeToString([]byte(task.DatapointURI))))
+
+		if err != nil {
+			response[task.TaskKey] = "false"
+			continue
+		}
+		defer resp.Body.Close()
+
+		bodyBytes, err := io.ReadAll(resp.Body)
+		if err != nil {
+			response[task.TaskKey] = "false"
+			continue
+		}
+		bodyString := string(bodyBytes)
+
+		response[task.TaskKey] = strings.ToLower(bodyString)
 	}
 
 	return response
@@ -123,7 +174,7 @@ func (h *HcaptchaSession) CheckCaptcha(Captcha Captcha, Config SiteConfig) (stri
 	payload, _ := json.Marshal(PayloadGetCaptcha{
 		V:            h.version,
 		JobMode:      Captcha.RequestType,
-		Answers:      Captcha.GetAnwser(),
+		Answers:      Captcha.GetAnswer(),
 		Serverdomain: h.Host,
 		Sitekey:      h.SiteKey,
 		MotionData:   strings.ReplaceAll(MotionData["CheckCaptcha"], MotionTime["CheckCaptcha"], strconv.Itoa(int(time.Now().Unix()))[:7]),
@@ -139,7 +190,8 @@ func (h *HcaptchaSession) CheckCaptcha(Captcha Captcha, Config SiteConfig) (stri
 
 	if !captchaResponse.Pass {
 		utils.FailedSubmit++
-		return "", errors.New("submit failed")
+		fmt.Println(captchaResponse)
+		return "", errors.New(fmt.Sprintf("(CheckCaptcha) submit failed: %s", captchaResponse.Error))
 	}
 
 	return captchaResponse.GeneratedPassUUID, nil
@@ -154,7 +206,6 @@ func SolveHcaptcha(Proxy string) (string, error) {
 	if !config.Pass {
 		return "", errors.New("pass failed")
 	}
-
 	captcha, err := session.GetCaptcha(config)
 	utils.HandleError(err)
 
@@ -163,25 +214,27 @@ func SolveHcaptcha(Proxy string) (string, error) {
 	}
 
 	if captcha.RequesterQuestion.En == "" {
-		return "", errors.New("error when get captcha")
+		return "", errors.New("Captcha question is empty")
 	}
 
 	if captcha.GeneratedPassUUID != "" {
+		fmt.Println("gotcha")
 		return captcha.GeneratedPassUUID, nil
 	}
 
 	if utils.Params.Advanced.OneClick {
 		utils.FailedSubmit++
-		return "", errors.New("oneclick activated, and captcha not passed")
+		return "", errors.New("one-click activated, and captcha not passed")
 	}
 
 	key, err := session.CheckCaptcha(captcha, config)
 
 	if err != nil {
-		return "", errors.New("response rejected")
+		return "", errors.New("CheckCaptcha response rejected")
 	}
 
 	utils.Log(fmt.Sprintf("[Hcaptcha] (%s) Took %vs", key[:20], time.Since(start)), 3)
 
 	return key, nil
+
 }

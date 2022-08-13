@@ -2,8 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
 	"strings"
 	"syscall"
 	"time"
@@ -14,20 +12,13 @@ import (
 )
 
 var (
-	debug      = false
 	PromptType = map[int]string{
-		1: "<fg=02fa44>SUCCESS</>",
-		2: "<fg=fc2323>ERROR</>",
-		3: " <fg=f0900a>INFO</> ",
-		4: "<fg=0af0ab>DEBUG</>",
+		1: "<fg=02fa44>+</>",
+		2: "<fg=fc2323>-</>",
+		3: "<fg=f0900a>*</>",
+		4: "<fg=0af0ab>%</>",
 	}
 )
-
-func BlockConsoleStd() {
-	Sc := make(chan os.Signal, 1)
-	signal.Notify(Sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, syscall.SIGTERM)
-	<-Sc
-}
 
 func PrintLogo() {
 	screen.Clear()
@@ -35,7 +26,7 @@ func PrintLogo() {
 }
 
 func Log(Content string, Type int) {
-	if Type == 4 && !debug {
+	if Type == 4 && !Params.Advanced.Debug {
 		return
 	}
 

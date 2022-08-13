@@ -19,6 +19,36 @@ func init() {
 	}
 	browser, err := pw.Chromium.Launch(playwright.BrowserTypeLaunchOptions{
 		Headless: playwright.Bool(true),
+		Args: []string{
+			`--lang=fr`,
+			`--no-sandbox`,
+			`--disable-setuid-sandbox`,
+			`--disable-infobars`,
+			`--single-process`,
+			`--no-zygote`,
+			`--no-first-run`,
+			`--window-position=0,0`,
+			`--ignore-certificate-errors`,
+			`--ignore-certificate-errors-skip-list`,
+			`--disable-dev-shm-usage`,
+			`--disable-accelerated-2d-canvas`,
+			`--disable-gpu`,
+			`--hide-scrollbars`,
+			`--disable-notifications`,
+			`--disable-background-timer-throttling`,
+			`--disable-backgrounding-occluded-windows`,
+			`--disable-breakpad`,
+			`--disable-component-extensions-with-background-pages`,
+			`--disable-extensions`,
+			`--disable-features=TranslateUI,BlinkGenPropertyTrees`,
+			`--disable-ipc-flooding-protection`,
+			`--disable-renderer-backgrounding`,
+			`--enable-features=NetworkService,NetworkServiceInProcess`,
+			`--force-color-profile=srgb`,
+			`--metrics-recording-only`,
+			`--mute-audio`,
+			"--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36",
+		},
 	})
 	utils.HandleError(err)
 
@@ -31,7 +61,7 @@ func init() {
 }
 
 func GetHSW() string {
-	resp, err := http.Get("https://newassets.hcaptcha.com/c/f543c527/hsw.js")
+	resp, err := http.Get("https://newassets.hcaptcha.com/c/c916818a/hsw.js")
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +76,7 @@ func GetHSW() string {
 }
 
 func HSWHashProof(request string) (string, error) {
-	resp, err := page.Evaluate(fmt.Sprintf(`hsw("%v")`, request))
+	resp, err := page.Evaluate(fmt.Sprintf(`%s("%v")`, utils.Params.Solver.HcaptchaType, request))
 	if err != nil {
 		return "", err
 	}

@@ -5,6 +5,7 @@ import "github.com/Danny-Dasilva/CycleTLS/cycletls"
 type DiscordSession struct {
 	Client  cycletls.CycleTLS
 	Headers map[string]string
+	Cookies []cycletls.Cookie
 	Proxy   string
 }
 

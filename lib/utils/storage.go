@@ -12,7 +12,7 @@ var (
 	Generated    int = 0
 	Unlocked     int = 0
 	Locked       int = 0
-	CPM int = 0
+	CPM          int = 0
 
 	ProxyList    *GoCycle.Cycle
 	UsernameList *GoCycle.Cycle
@@ -30,7 +30,7 @@ def gen_calculator_thread(self):
                 self._valid_min = round(self._unlocked / ((time.time() - start_time) / 60))
                 self._lock_rate = (100 * self._locked) / (self._locked + self._unlocked)
 
-                
+
                 if self._solved_captcha_times:
                     self._sucess_rate = (100 * self._solved_succes) / (self._solved_succes + self._solved_fail)
                 else:
@@ -46,7 +46,7 @@ func CounterThread() {
 
 	for {
 		time.Sleep(1 * time.Second)
-		
+
 		// calculate how many accounts generated in 1 second
 		CPM = Generated - lasted
 		lasted = Generated
@@ -60,10 +60,13 @@ type Config struct {
 		HcaptchaType     string `toml:"hcaptchaType"`
 	} `toml:"solver"`
 	Advanced struct {
-		Debug bool `toml:"debug"`
-		Threads int `toml:"threads"`
+		Debug    bool `toml:"debug"`
+		Threads  int  `toml:"threads"`
 		OneClick bool `toml:"oneClick"`
 	} `toml:"advanced"`
+	Discord struct {
+		InviteCode string `toml:"inviteCode"`
+	}
 }
 
 func InitFiles() {

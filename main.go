@@ -20,7 +20,7 @@ func Title() {
 func Worker() {
 	proxy := utils.ProxyList.Next()
 
-	hcaptcha_key, err := hcaptcha.SolveHcaptcha(proxy)
+	captchaKey, err := hcaptcha.SolveHcaptcha(proxy)
 
 	if err != nil {
 		utils.HandleError(err)
@@ -28,7 +28,7 @@ func Worker() {
 	}
 
 	session := discord.NewDiscordSession(proxy)
-	session.Register(hcaptcha_key)
+	session.Register(captchaKey)
 }
 
 func main() {
@@ -36,8 +36,8 @@ func main() {
 	utils.PrintLogo()
 	utils.InitFiles()
 
-	fmt.Println(utils.Params)
-	
+	fmt.Printf("+ | Running GoToken using %d threads\n", utils.Params.Advanced.Threads)
+
 	c := goccm.New(utils.Params.Advanced.Threads)
 
 	for {

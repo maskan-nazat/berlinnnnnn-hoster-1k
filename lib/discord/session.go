@@ -20,23 +20,23 @@ func NewDiscordSession(Proxy string) *DiscordSession {
 
 	return session
 }
+
 func (d *DiscordSession) Register(CaptchaKey string) string {
 	payload, _ := json.Marshal(PayloadRegister{
 		Consent:     true,
 		Fingerprint: d.Headers["x-fingerprint"],
 		Username:    utils.UsernameList.Next(),
 		CaptchaKey:  CaptchaKey,
-		Invite:      "book-club",
+		Invite:      utils.Params.Discord.InviteCode,
 	})
 
-	response, err := d.Client.Do("https://canary.discord.com/api/v9/auth/register", d.CycleOptions(string(payload)), "POST")
+	response, err := d.Client.Do("https://discord.com/api/v9/auth/register", d.CycleOptions(string(payload)), "POST")
 	utils.HandleError(err)
 
 	var data ResponseRegister
 	json.Unmarshal([]byte(response.Body), &data)
 
 	if data.Token != "" {
-		//fmt.Println(data.Token)
 		utils.AppendLine("./data/output/generated.txt", data.Token)
 		go d.CheckAccount(data.Token, CaptchaKey[:2])
 	}
