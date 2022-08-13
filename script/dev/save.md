@@ -1,5 +1,6 @@
 # using solving node
 
+```go
 func (c *Captcha) GetAnwser() map[string]string {
 	item := strings.ReplaceAll(strings.Split(strings.ReplaceAll(c.RequesterQuestion.En, "an", "a"), "Please click each image containing a ")[1], ".", "")
 	response := map[string]string{}
@@ -32,8 +33,10 @@ func (c *Captcha) GetAnwser() map[string]string {
 
 	return response
 }
+```
 
 # get hsw with browser
+```go
 /*client := http.Client{
 		Timeout: 5 * time.Second,
 	}
@@ -53,3 +56,20 @@ func (c *Captcha) GetAnwser() map[string]string {
 
 		return string(bodyBytes)
 	}*/
+```
+
+# xx
+```go
+
+	func (c *Captcha) GetAnswer() map[string]string {
+		item := strings.ReplaceAll(strings.Split(strings.ReplaceAll(c.RequesterQuestion.En, "an", "a"), "Please click each image containing a ")[1], ".", "")
+		response := map[string]string{}
+
+		for _, task := range c.Tasklist {
+			response[task.TaskKey] = strconv.FormatBool(strings.Contains(task.DatapointURI, item))
+		}
+
+		return response
+	}
+
+```
